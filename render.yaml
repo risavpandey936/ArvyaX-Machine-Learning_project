@@ -1,9 +1,20 @@
 services:
+  # Streamlit UI
   - type: web
-    name: arvyax-emotional-support
+    name: arvyax-emotional-support-ui
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+
+  # FastAPI API
+  - type: web
+    name: arvyax-emotional-support-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.13

@@ -65,6 +65,14 @@ def load_models():
     meta_columns = pickle.load(open("meta_columns.pkl", "rb"))
     return state_model, intensity_model, tfidf, meta_columns
 
+@st.cache_resource(show_spinner="Loading Conversational AI Model (First boot up takes ~10s)...")
+def load_slm():
+    from transformers import pipeline
+    # Use google/flan-t5-small because it handles conversational text well, runs locally, 
+    # and has a tiny (~300MB) footprint suitable for minimal CPU inference.
+    slm = pipeline("text2text-generation", model="google/flan-t5-small")
+    return slm
+
 def decision_engine(stress, energy, duration, intensity, state):
     # High stress → immediate calming
     if stress >= 4:
@@ -209,6 +217,21 @@ if predict_btn and journal_text.strip() != "":
             ''', unsafe_allow_html=True)
             
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Supportive SLM Chat Generation
+        try:
+            slm = load_slm()
+            prompt = f"Offer a comforting, very short empathic sentence to someone feeling '{pred_state}' who said: '{journal_text}'"
+            slm_response = slm(prompt, max_length=50, num_return_sequences=1)[0]['generated_text']
+            
+            st.markdown(f'''
+            <div style="background-color: rgba(88, 166, 255, 0.1); border-left: 4px solid #58a6ff; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <h3 style="color: #58a6ff; margin-top: 0px; font-size: 1.1rem;">💬 Companion AI Notice</h3>
+                <p style="margin-bottom: 0px; font-style: italic;">"{slm_response}"</p>
+            </div>
+            ''', unsafe_allow_html=True)
+        except Exception as e:
+            st.warning(f"Failed to load conversational AI for support message: {e}")
         
         st.markdown(f'''
         <div class="action-card">
